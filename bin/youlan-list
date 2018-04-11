@@ -28,6 +28,10 @@ request({
     requestBody.forEach(repo => {
       console.log(
         '  ' + chalk.yellow('★') +
+        '  ' + 'template' +
+        ' - ' + repo.template)
+      console.log(
+        '  ' + chalk.yellow('★') +
         '  ' + chalk.blue(repo.name) +
         ' - ' + repo.description)
     })

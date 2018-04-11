@@ -17,9 +17,7 @@
     "url": "https://github.com/wukongtime/youlan-cli/issues"
   },
   "scripts": {
-    "test": "npm run lint && npm run e2e",
-    "lint": "eslint test/e2e/test*.js lib bin/* --env mocha",
-    "e2e": "rimraf test/e2e/mock-template-build && mocha test/e2e/test.js --slow 1000"
+    "test": "mocha test/test.js"
   },
   "dependencies": {
     "async": "^2.4.0",

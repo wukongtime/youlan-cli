@@ -15,6 +15,7 @@ const generate = require('../lib/generate')  //自定义工具-用于基于模�
 const checkVersion = require('../lib/check-version') //自定义工具-用于检测vue-cli版本的工具
 const warnings = require('../lib/warnings') //自定义工具-用于模板的警告
 const localPath = require('../lib/local-path') //自定义工具-用于路径的处理
+const request=require('request')
 
 const isLocalPath = localPath.isLocalPath   //判断是否是本地路径
 const getTemplatePath = localPath.getTemplatePath  //获取本地模板的绝对路径
@@ -81,7 +82,7 @@ process.on('exit', () => {
 })
 
 /**
- * 对着上面代码，vue-cli会判断inPlace和exists(to),true则询问开发者，当开发者回答“yes”的时候执行run函数，否则直接执行run函数。这里询问开发者的问题有如下两个：
+ * cli会判断inPlace和exists(to),true则询问开发者，当开发者回答“yes”的时候执行run函数，否则直接执行不run函数。这里询问开发者的问题有如下两个：
  *
  * Generate project in current directory? //是否在当前目录下构建项目
  * Target directory exists. Continue? //构建目录已存在,是否继续
@@ -107,43 +108,16 @@ if (inPlace || exists(to)) {
  */
 
 function run () {
-  // 检查是否为本地模板
-  if (isLocalPath(template)) {
-    const templatePath = getTemplatePath(template)  //获取绝对路径
-    if (exists(templatePath)) { //判断模板所在路径是否存在
-      // 渲染模板
-      generate(name, templatePath, to, err => {
-        if (err) logger.fatal(err)
-        console.log()
-        logger.success('Generated "%s".', name)
+  checkVersion(() => {   //检查版本号
+    if (!hasSlash) {  //官方模板还是第三方模板
+      console.log(template)
+      getOriginTemplatePath(template,(officialTemplate)=>{
+        downloadAndGenerate(officialTemplate)
       })
     } else {
-      // 打印错误日志，提示本地模板不存在
-      logger.fatal('Local template "%s" not found.', template)
+      downloadAndGenerate(template)
     }
-  } else {
-    checkVersion(() => {   //检查版本号
-      if (!hasSlash) {  //官方模板还是第三方模板
-        // use official templates
-        // 从这句话以及download-git-repo的用法，我们得知了vue的官方的模板库的地址：https://github.com/vuejs-templates
-        const officialTemplate = 'vuejs-templates/' + template
-        if (template.indexOf('#') !== -1) {  //模板名是否带"#"
-          downloadAndGenerate(officialTemplate) //下载模板
-        } else {
-          if (template.indexOf('-2.0') !== -1) { //是都带"-2.0"
-          //发出警告
-            warnings.v2SuffixTemplatesDeprecated(template, inPlace ? '' : name)
-            return
-          }
-
-          // warnings.v2BranchIsNowDefault(template, inPlace ? '' : name)
-          downloadAndGenerate(officialTemplate)
-        }
-      } else {
-        downloadAndGenerate(template)
-      }
-    })
-  }
+  })
 }
 
 /**
@@ -165,5 +139,27 @@ function downloadAndGenerate (template) {
       console.log()
       logger.success('Generated "%s".', name)
     })
+  })
+}
+
+function getOriginTemplatePath(template, callback){
+  request({
+    url:"https://wukongtime.github.io/repos.json",
+    timeout: 1000
+  },(err,res,body)=>{
+    if(!err&&res.statusCode===200){
+      let templateArray=JSON.parse(body);
+      templateArray=templateArray.filter((item)=>{
+        console.log(item)
+        return item.name===template
+      })
+      if(templateArray.length>0){
+        callback(templateArray[0].template)
+      }else{
+        logger.error("Sorry,cannot find the template.Please check the template name")
+      }
+    }else{
+      logger.error("Sorry,server error,download template unsuccessfully.Please try again later!")
+    }
   })
 }
