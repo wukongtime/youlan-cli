@@ -9,7 +9,7 @@ npm install youlan-cli -g
 
 ### Build Peoject
 ```
-youlan init  <template-name>  <project-name>
+youlan init  webpack  <project-name>
 ```
 ### Show Offical Template
 ```
